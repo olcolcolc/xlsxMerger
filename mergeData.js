@@ -1,8 +1,9 @@
 const xlsx = require("xlsx");
 const path = require("path");
 
+
 // Ścieżki do plików
-const file1Path = path.resolve("design_for_disassembly.xlsx");
+const file1Path = path.resolve("circular_economy.xlsx");
 const file2Path = path.resolve("cite_score.xlsx");
 const outputFilePath = path.resolve("merged_data.xlsx");
 
@@ -15,9 +16,11 @@ const sheet1 = xlsx.utils.sheet_to_json(file1.Sheets[file1.SheetNames[0]], { hea
 const sheet2 = xlsx.utils.sheet_to_json(file2.Sheets[file2.SheetNames[0]]);
 
 // Krok 1: Tworzenie obiektu titlesScoreObject
-const secondRow = sheet1[1]; // Drugi wiersz zawiera nagłówki
+const secondRow = sheet1[0]; // Pierwszy wiersz zawiera nagłówki
+// console.log("nagłówki", sheet1[0])
+
 const sourceIndex = secondRow.indexOf("source"); // Znalezienie indeksu kolumny "source"
-console.log(sourceIndex)
+// console.log(sourceIndex)
 
 if (sourceIndex === -1) {
     console.error('Kolumna "source" nie została znaleziona w pliku file1.');
@@ -25,47 +28,50 @@ if (sourceIndex === -1) {
 }
 
 const titlesScoreObject = {};
-sheet1.forEach((row) => { 
+sheet1.forEach((row, index) => {
     const sourceTitle = row[sourceIndex];
     if (sourceTitle) {
-        titlesScoreObject[sourceTitle] = ""; // Inicjalizuj z pustą wartością
+        const sourceTitleToLowerCase = sourceTitle.toLowerCase() // sformatowanie do małej litery
+        titlesScoreObject[`${index}`] = { title: sourceTitleToLowerCase }; // unikalny klucz, a wartością jest tytuł
     }
 });
 
-// Sprawdzenie liczby kluczy
+// Sprawdzenie liczby tytułów
 const titlesCount = Object.keys(titlesScoreObject).length;
-console.log(`Znaleziono ${titlesCount} kluczy`)
+console.log(`Znaleziono ${titlesCount} tytułów`)
 
 // Wyświetlenie kluczy w konsoli
-console.log("TitlesScoreObject keys:", Object.keys(titlesScoreObject));
+// console.log("TitlesScoreObject keys:", Object.keys(titlesScoreObject));
 
-// Krok 2: Tworzenie obiektu sourceMap
+// Krok 2: Tworzenie obiektu sourceMap z pliku xlsx "city_score"
 const sourceMap = {};
 sheet2.forEach((row) => {
     const sourceTitle = row["Source title"]; // Tytuł z pliku file2
     const score = row["CiteScore"]; // Ocena z pliku file2
     if (sourceTitle) {
-        sourceMap[sourceTitle] = score;
+        const sourceTitleToLowerCase = sourceTitle.toLowerCase() // sformatowanie do małej litery
+        sourceMap[sourceTitleToLowerCase] = score;
     }
 });
 
-// Krok 3: Przypisywanie wartości do titlesScoreObject
-Object.keys(titlesScoreObject).forEach((title) => {
-    if (sourceMap[title]) {
-        titlesScoreObject[title] = sourceMap[title]; // Przypisz wartość, jeśli klucz istnieje w sourceMap
-    } else {
-        titlesScoreObject[title] = "Not found"; // Przypisz "Not found", jeśli klucz nie istnieje
-    }
+// Krok 3: Przypisywanie wartości do titlesScoreObject - obiektu, który zawiera tytuł z file1 i odpowiednią ocenę z file2
+Object.keys(titlesScoreObject).forEach((key) => {
+    const title = titlesScoreObject[key].title;
+    titlesScoreObject[key].CiteScore = sourceMap[title] || "Not found";
 });
+// Przypisz wartość, jeśli klucz istnieje w sourceMap
+// Przypisz "Not found", jeśli klucz nie istnieje
+
 
 // Wyświetlenie wynikowego obiektu titlesScoreObject w konsoli
-console.log("Updated TitlesScoreObject:", titlesScoreObject);
+// console.log("Updated TitlesScoreObject:", titlesScoreObject);
 
 // Krok 4: Tworzenie pliku XLSX
-const mergedData = Object.entries(titlesScoreObject).map(([title, score]) => ({
+const mergedData = Object.values(titlesScoreObject).map(({ title, CiteScore }) => ({
     "Source Title": title,
-    "CiteScore": score,
+    "CiteScore": CiteScore,
 }));
+
 
 const newWorkbook = xlsx.utils.book_new();
 const newSheet = xlsx.utils.json_to_sheet(mergedData);
