@@ -1,35 +1,35 @@
 const xlsx = require("xlsx");
 const path = require("path");
 
-// Ścieżka do wejściowego i wyjściowego pliku
-const inputFile = path.resolve("material_reuse.xlsx"); // zmień nazwę
-const outputFile = path.resolve("sorted.xlsx");
+// Nazwa pliku wejściowego
+const inputFile = path.resolve("material_reuse.xlsx");
+
+// Wyciągnij nazwę pliku bez rozszerzenia
+const fileName = path.basename(inputFile, ".xlsx");
+
+// Nazwa pliku wyjściowego
+const outputFile = path.resolve(`sorted_${fileName}.xlsx`);
 
 // Wczytaj plik
 const workbook = xlsx.readFile(inputFile);
 const sheet = workbook.Sheets[workbook.SheetNames[0]];
 
 // Zamień dane na tablicę obiektów
-const data = xlsx.utils.sheet_to_json(sheet); // header: 0 domyślnie
+const data = xlsx.utils.sheet_to_json(sheet);
 
-// Grupowanie po polu "categoria"
-const sortedList = {};
-
-data.forEach((item) => {
-  const category = item["categoria"];
-  if (!sortedList[category]) {
-    sortedList[category] = [];
-  }
-  sortedList[category].push(item);
+// Sortuj alfabetycznie po polu "categories"
+const sortedData = [...data].sort((a, b) => {
+  const catA = a["categories"]?.toString().toLowerCase() || "";
+  const catB = b["categories"]?.toString().toLowerCase() || "";
+  return catA.localeCompare(catB);
 });
 
-// Tworzenie nowego pliku Excel z osobnymi arkuszami
+console.log(sortedData)
+
+// Tworzenie nowego workbooka i arkusza
 const newWorkbook = xlsx.utils.book_new();
-
-Object.entries(sortedList).forEach(([category, items]) => {
-  const sheet = xlsx.utils.json_to_sheet(items);
-  xlsx.utils.book_append_sheet(newWorkbook, sheet, category.slice(0, 31)); // Excel ma limit 31 znaków na nazwę arkusza
-});
+const newSheet = xlsx.utils.json_to_sheet(sortedData);
+xlsx.utils.book_append_sheet(newWorkbook, newSheet, "Sorted");
 
 // Zapisz nowy plik
 xlsx.writeFile(newWorkbook, outputFile);
