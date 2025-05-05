@@ -42,6 +42,8 @@ I developed this project to assist my boyfriend with organizing data for his PhD
 After execution, you'll receive new .xlsx files containing the sorted or merged data.
 
 ### Plans for Future Development
+- Improving code clarity and readability.
+- Refactoring code for better maintainability.
 - Adding more filtering options based on different criteria.
 - Grouping data by categories.
 - Creating a simple UI for executing actions without coding.
